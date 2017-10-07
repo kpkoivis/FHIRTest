@@ -9,6 +9,8 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
 import ca.uhn.fhir.model.dstu2.resource.Patient;
 import ca.uhn.fhir.parser.IParser;
+import ca.uhn.fhir.rest.api.MethodOutcome;
+import ca.uhn.fhir.rest.client.IGenericClient;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -37,34 +39,22 @@ public class FHIRDstu2ServiceEpicImpl implements FHIRDstu2Service {
     @Override
     public List<Patient> searchForPatient(String familyName, String givenName) {
 
-        String patientSearchString = "/Patient?given=" + givenName + "&family=" + familyName;
-
-        URI patientUri;
+        IGenericClient client = ctx.newRestfulGenericClient(baseUrl);
 
         List<Patient> patientList = new ArrayList();
-        
-        try {
-            patientUri = new URI(baseUrl + patientSearchString);
-            RestTemplate restTemplate = new RestTemplate();
 
-            String result = restTemplate.getForObject(patientUri, String.class);
+        Bundle results = client
+                .search()
+                .forResource(Patient.class)
+                .where(Patient.GIVEN.matches().value(givenName))
+                .where(Patient.FAMILY.matches().value(familyName))
+                .returnBundle(Bundle.class)
+                .execute();
 
-            //System.out.println(result);
+        results.getEntry().forEach(entry -> {
+            patientList.add((Patient) entry.getResource());
+        });
 
-            IParser parser = this.ctx.newJsonParser();
-
-            Bundle bundle = parser.parseResource(Bundle.class, result);
-            
-             
-
-            bundle.getEntry().forEach(entry -> {
-                patientList.add((Patient)entry.getResource());
-            });
-
-        } catch (URISyntaxException ex) {
-            Logger.getLogger(FHIRDstu2ServiceEpicImpl.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
         return patientList;
 
     }
