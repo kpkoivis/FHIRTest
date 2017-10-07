@@ -8,18 +8,11 @@ package fi.mediavustin.fhirtest.service.fhir.dstu2;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
 import ca.uhn.fhir.model.dstu2.resource.Patient;
-import ca.uhn.fhir.parser.IParser;
-import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.client.IGenericClient;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 /**
  *
@@ -41,8 +34,6 @@ public class FHIRDstu2ServiceEpicImpl implements FHIRDstu2Service {
 
         IGenericClient client = ctx.newRestfulGenericClient(baseUrl);
 
-        List<Patient> patientList = new ArrayList();
-
         Bundle results = client
                 .search()
                 .forResource(Patient.class)
@@ -51,6 +42,7 @@ public class FHIRDstu2ServiceEpicImpl implements FHIRDstu2Service {
                 .returnBundle(Bundle.class)
                 .execute();
 
+        List<Patient> patientList = new ArrayList();
         results.getEntry().forEach(entry -> {
             patientList.add((Patient) entry.getResource());
         });
