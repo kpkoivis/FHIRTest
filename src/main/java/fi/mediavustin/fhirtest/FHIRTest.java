@@ -5,13 +5,16 @@
  */
 package fi.mediavustin.fhirtest;
 
+import ca.uhn.fhir.model.dstu2.resource.Conformance;
+import ca.uhn.fhir.parser.IParser;
+import ca.uhn.fhir.rest.client.api.IGenericClient;
 import fi.mediavustin.fhirtest.service.fhir.dstu2.FHIRDstu2Service;
 import fi.mediavustin.fhirtest.service.fhir.dstu3.FHIRDstu3Service;
 import java.util.ArrayList;
 import java.util.List;
+import org.hl7.fhir.dstu3.model.CapabilityStatement;
 import org.hl7.fhir.dstu3.model.HumanName;
 import org.hl7.fhir.dstu3.model.Patient;
-import org.hl7.fhir.instance.model.api.IIdType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -30,11 +33,18 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan("fi.mediavustin")
 public class FHIRTest {
 
-    @Autowired
-    private FHIRDstu2Service epicFHIRService;
+    // Epic DSTU2 sandboxes
+    private final String epicDSTU2baseUrl = "https://open-ic.epic.com/FHIR/api/FHIR/DSTU2/";
+    //private final String epicDSTU2baseUrl = "https://open-ic.epic.com/argonaut/api/FHIR/Argonaut/";
+    
+    // Omakanta PHR DSTU3 sandboxes
+    private final String omakantaDSTU3baseUrl = "http://fhirsandbox.kanta.fi/phr-resourceserver/baseStu3/";
 
     @Autowired
-    private FHIRDstu3Service omakantaFHIRService;
+    private FHIRDstu2Service fhirDstu2Service;
+
+    @Autowired
+    private FHIRDstu3Service fhirDstu3Service;
 
     public static void main(String... args) {
         SpringApplication.run(FHIRTest.class, args);
@@ -47,7 +57,29 @@ public class FHIRTest {
             @Override
             public void run(String[] args) throws Exception {
 
-                List<ca.uhn.fhir.model.dstu2.resource.Patient> epicPatients = epicFHIRService.searchForPatient("Argonaut", "Jason");
+                // get a dstu2 client and print out the capability (conformance) statement of the dstu2 server the client has connected to
+                IGenericClient epicClient = fhirDstu2Service.getClient(epicDSTU2baseUrl);
+                Conformance confStatement = fhirDstu2Service.getConformanceStatement(epicClient);
+                String confStatementJSON = fhirDstu2Service.resourceAsJSONString(confStatement);
+                System.out.println(confStatementJSON);
+
+                // get a dstu3 client and print out the capability (conformance) statement of the dstu3 server the client has connected to
+                IGenericClient omakantaClient = fhirDstu3Service.getClient(omakantaDSTU3baseUrl);
+                CapabilityStatement capsStatement = fhirDstu3Service.getCapabilityStatement(omakantaClient);
+                String capsStatementJSON = fhirDstu3Service.resourceAsJSONString(capsStatement);
+                System.out.println(capsStatementJSON);
+
+                // a simple copy from one server to another
+                testCopyPatient(epicClient, omakantaClient);
+
+            }
+                      
+            
+
+            private void testCopyPatient(IGenericClient epicClient, IGenericClient omakantaClient) {
+                
+                
+                List<ca.uhn.fhir.model.dstu2.resource.Patient> epicPatients = fhirDstu2Service.searchForPatient(epicClient, "Argonaut", "Jason");
                 
                 System.out.println("Epic sandbox patient count: " + epicPatients.size());
                 
@@ -65,6 +97,7 @@ public class FHIRTest {
 
                     omakantaPatient.setName(names);
 
+                    /*
                     IIdType patientId = omakantaFHIRService.createPatient(omakantaPatient);
                     
                     if (patientId != null) {
@@ -84,11 +117,9 @@ public class FHIRTest {
                     } else {
                         System.out.println("No patient with id " + patientId.getIdPart() + " was found in Omakanta.");
                     }
-
+*/
                 }
-                      
             }
-
         };
     }
 }
