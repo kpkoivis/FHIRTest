@@ -6,7 +6,6 @@
 package fi.mediavustin.fhirtest;
 
 import ca.uhn.fhir.model.dstu2.resource.Conformance;
-import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import fi.mediavustin.fhirtest.service.fhir.dstu2.FHIRDstu2Service;
 import fi.mediavustin.fhirtest.service.fhir.dstu3.FHIRDstu3Service;
